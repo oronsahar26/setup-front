@@ -5,23 +5,45 @@ function App() {
 
   const [users, setUsers] = useState([]);
 
-  // This code only runs at first Lunch/ Refresh = []
+  // This code only runs at first Launch/ Refresh = []
+  // This code only runs on the first mount
   useEffect(() => {
+    const abortController = new AbortController();
+
     async function getUsers() {
-      const res = await fetch('https://setup-back-production.up.railway.app/users');
+      try {
+        debugger;
+        
+        const res = await fetch(`${import.meta.env.VITE_BACK_URL}/users`, {
+          signal: abortController.signal
+        });
 
-      // Converts to JSON (res format is Binary)
-      const data = await res.json();
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
 
-      console.log(data);
-      setUsers(data);
+        const data = await res.json();
+        setUsers(data);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Failed to fetch users:', error);
+          // כאן כדאי גם לעדכן סטייט של שגיאה, למשל setError(error.message)
+        }
+      }
     }
     
     getUsers();
-  }, [])
+
+    // פונקציית ניקוי לביטול הבקשה אם הרכיב יורד מהמסך
+    return () => {
+      abortController.abort();
+    };
+  }
+  
+  , []);
 
   return (
-    <div>
+    <div className="bg-green-200">
       The users *******:
       {users.map(user => (
         <p key={user._id}>{user.name}</p>
